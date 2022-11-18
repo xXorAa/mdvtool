@@ -143,7 +143,7 @@ void file_dump_chain(int f) {
 void mdv_create(void){
   if (!strlen(medium_name)) strncpy(medium_name,"MD        ",10);
   printf("Creating mdv\n");
-  int rand=random();
+  int rnd=rand();
   
   for(int c=0;c<MAX_SECTORS;c++){
 
@@ -151,7 +151,7 @@ void mdv_create(void){
     buffer[c].hdr.preamble[11]=0xFF;
     buffer[c].hdr.ff=0xFF;
     buffer[c].hdr.snum=c;
-    buffer[c].hdr.rnd=rand;
+    buffer[c].hdr.rnd=rnd;
     buffer[c].sec.bh_preamble[10]=0xFF;
     buffer[c].sec.bh_preamble[11]=0xFF;
     buffer[c].sec.data_preamble[6]=0xFF;
@@ -821,7 +821,7 @@ void mdv_rename(char *name) {
   printf("Setting name: '%s'\n", lname);
   strncpy(medium_name,lname,10);
   int i;
-  unsigned short rnd = random();
+  unsigned short rnd = rand();
   for(i=0;i<MAX_SECTORS;i++) {
     if(buffer[i].hdr.ff == 0xff) {
       memcpy(buffer[i].hdr.name, lname, 10);
