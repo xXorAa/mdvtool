@@ -5,7 +5,8 @@ ifeq ($(OS),Windows_NT)     # is Windows_NT on XP, 2000, 7, Vista, 10...
     LIBS :=
     EXE := .exe
 else
-    LIBS := -lzip
+    LIBS := $(shell pkg-config --libs libzip)
+    CFLAGS := $(shell pkg-config --cflags libzip)
     STATIC_LIBS :=
     EXE := 
 endif
@@ -13,7 +14,7 @@ endif
 all: $(TOOL)$(EXE)
 
 $(TOOL)$(EXE): $(TOOL).c
-	$(CC) -o $@ $< $(LIBS) $(STATIC_LIBS)
+	$(CC) $(CFLAGS) -o $@ $< $(LIBS) $(STATIC_LIBS)
 
 clean:
 	-rm $(TOOL)$(EXE)
