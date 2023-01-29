@@ -51,6 +51,7 @@ mdv_entry_t buffer[MAX_SECTORS];
 unsigned char sector_table[MAX_SECTORS];
 char medium_name[10];
 unsigned char files[256][256];
+uint16_t hdr_rnd;
 
 int isbyte(unsigned char *c, unsigned char byte, int len) {
   while(len--)
@@ -189,6 +190,7 @@ int mdv_load(char *name) {
   memset(medium_name, 0, sizeof(medium_name));
   memset(sector_table, 0xff, sizeof(sector_table));
   memset(files, 0xff, sizeof(files));
+  hdr_rnd = 0;
   if(!strcasecmp(name, "create")){
     mdv_create();
   } else {
@@ -249,6 +251,14 @@ int mdv_load(char *name) {
         return -1;
         }
       }
+
+      if(!hdr_rnd) {
+        hdr_rnd = hdr->rnd;
+      } else {
+        if(hdr->rnd != hdr_rnd) {
+          fprintf(stderr, "Header @%d: Rand mismatch 0x%04x:0x%04x\n", i, hdr->rnd, hdr_rnd);
+        }
+      }
       
       if(sector_table[i] != 0xff) {
         fprintf(stderr, "Header @%d: Multiple sector number %d\n",i, hdr->snum);
@@ -291,6 +301,8 @@ int mdv_load(char *name) {
   }
 
   printf("Medium name: \"%.10s\"\n", medium_name);
+
+  printf("Rand: 0x%04x\n", hdr_rnd);
 
   // check if we are having gaps in the sector list
   for(i=0;i<MAX_SECTORS;i++) {
@@ -832,6 +844,19 @@ void mdv_rename(char *name) {
   
 }
 
+void mdv_rand(char *rand) {
+    uint16_t mdv_rnd = strtol(rand, NULL, 16);
+
+    printf("Setting rand: %04x\n", mdv_rnd);
+    int i;
+    for(i=0;i<MAX_SECTORS;i++) {
+        if(buffer[i].hdr.ff == 0xff) {
+            buffer[i].hdr.rnd = mdv_rnd;
+            buffer[i].hdr.csum = sum(&buffer[i].hdr.ff, 14);
+        }
+    }
+}
+
 int main(int argc, char **argv) {
 
   assert(sizeof(hdr_t) == 28);
@@ -851,6 +876,7 @@ int main(int argc, char **argv) {
     printf("   export file_name     - export a file from the MDV image\n");
     printf("   erase                - erase the MDV image\n");
     printf("   name image_name      - rename the MDV image\n");
+    printf("   rand random          - set the rand for MDV image\n");
     printf("   import file_name     - import a file to the MDV image\n");
     printf("   zip_import file_name - import an entire ZIP archive\n");
     printf("   write file_name      - write the MDV image\n"); 
@@ -894,6 +920,15 @@ int main(int argc, char **argv) {
       }
 
       mdv_rename(argv[c]);
+    }
+
+    else if(!strcasecmp(argv[c], "rand")) {
+      if(++c >= argc) {
+        printf("rand needs an image rand as parameter\n");
+        return 0;
+      }
+
+      mdv_rand(argv[c]);
     }
 
     else if(!strcasecmp(argv[c], "zip_import")) {
